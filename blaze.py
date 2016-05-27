@@ -1,6 +1,7 @@
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import logging
 import time
+import python3pickledb as pickledb
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -8,9 +9,13 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 logger = logging.getLogger(__name__)
 
+# create database object
+db = pickledb.load('bot.db', True)
+
 # initialize a dictionary for chats
 # where key is chat id and value is another dictionary of alerts
-chats = {}
+if not db.get('chats') :
+    db.set('chats', {})
 
 # Define a few command handlers. These usually take the two arguments bot and
 # update. Error handlers also receive the raised TelegramError object in error.
@@ -18,13 +23,17 @@ def start(bot, update):
     bot.sendMessage(update.message.chat_id, text='Hi!')
 
     # add alert defaults
-    chats[update.message.chat_id] = {'blaze':'4:20', 'neverforget':'9:11'}
+    chats = db.get('chats')
+    chats[str(update.message.chat_id)] = {'blaze':'4:20', 'neverforget':'9:11'}
+    db.set('chats', chats)
 
 
 def stop(bot, update):
     bot.sendMessage(update.message.chat_id, text = 'Bye!')
-    chats.pop(update.message.chat_id)
-    print(myChats)
+
+    chats = db.get('chats')
+    chats.pop(str(update.message.chat_id))
+    db.set('chats', chats)
 
 
 def help(bot, update):
@@ -40,26 +49,29 @@ def add(bot, update):
     splitMsg = update.message.text.split(' ')
     alertTime = splitMsg[1]
     alertMsg = splitMsg[2]
-    chats[update.message.chat_id][alertMsg] = alertTime
+
+    chats = db.get('chats')
+    chats[str(update.message.chat_id)][alertMsg] = alertTime
+    db.set('chats', chats)
 
     bot.sendMessage(update.message.chat_id, text='OK, at ' + alertTime + ' I will remind you to ' + alertMsg + ' every day')
-    print('added: ')
-    print(chats[update.message.chat_id])
-    print()
+
+def remove(bot, update):
+    bot.sendMessage(update.message.chat_id, text='Alright, which of these reminders would you like to remove?')
+
 
 def error(bot, update, error):
     logger.warn('Update "%s" caused error "%s"' % (update, error))
 
 def sendAlerts(bot):
     # for all the alert values in the allAlerts dictionary
+    chats = db.get('chats')
     for c in chats:
         for a in chats[c]:
-            print('chats[c]: ' + str(chats[c]))
             splitTime = chats[c][a].split(':') # splits time into two parts
             hour = splitTime[0]
             minute = splitTime[1]
-            print(hour + ':' + minute)
-            print(str(time.localtime().tm_hour) + ':' + str(time.localtime().tm_min))
+
             if time.localtime().tm_hour == int(hour) and time.localtime().tm_min == int(minute):
                 bot.sendMessage(c, text='/'+ a)
 
@@ -79,6 +91,7 @@ def main():
     dp.add_handler(CommandHandler("help", help))
     dp.add_handler(CommandHandler("stop", stop))
     dp.add_handler(CommandHandler("add", add))
+    dp.add_handler(CommandHandler("remove", remove))
 
     delay = 60 - time.localtime().tm_sec # don't start checking until the beginning of the next minute
     jobQ.put(sendAlerts, 60, True, next_t=delay, prevent_autostart=False) # begin checking the time
