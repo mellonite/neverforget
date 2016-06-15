@@ -16,7 +16,7 @@ db = pickledb.load('bot.db', True)
 helpText = 'I will send you messages about the time. ' \
            '\n\n/add your own reminders' \
            '\nUse syntax: /add HH:MM message' \
-           '\nI run on a 24-hour clock!' \
+           '\nI run on a 24-hour clock in EST!' \
            '\n\n/remove reminders you have added'
 
 # initialize the database
@@ -121,12 +121,23 @@ def cancel(bot, update):
     db.set('state', state)
     del context[chat_id]
 
+def reminders(bot, update):
+    chat_id = str(update.message.chat_id)
+    message = 'Your reminders:'
+
+    alerts = db.get('alerts')
+
+    for alert in alerts[chat_id]:
+        message += '\n%-20s%s' %(alert, alerts[chat_id][alert])
+
+    bot.sendMessage(update.message.chat_id, text=message)
+
 def help(bot, update):
     bot.sendMessage(update.message.chat_id, text=helpText)
 
 addError = 'Please use the format: /add HH:MM message.' \
            '\nExample: /add 11:11 wish' \
-           '\nI run on a 24-hour clock!'
+           '\nI run on a 24-hour clock in EST!'
 
 existingAlert = 'I already remind you to *%s*!' \
                 '\nPlease pick a new name for your reminder or /remove the existing one.'
@@ -199,8 +210,9 @@ def main():
     # The answer and confirmation
     updater.dispatcher.add_handler(MessageHandler([Filters.text], remove_value))
     updater.dispatcher.add_handler(CommandHandler('cancel', cancel))
-    dp.add_handler(CommandHandler("help", help))
-    dp.add_handler(CommandHandler("add", add))
+    dp.add_handler(CommandHandler('reminders', reminders))
+    dp.add_handler(CommandHandler('help', help))
+    dp.add_handler(CommandHandler('add', add))
 
     delay = 60 - time.localtime().tm_sec # don't start checking until the beginning of the next minute
     jobQ.put(sendAlerts, 60, True, next_t=delay, prevent_autostart=False) # begin checking the time
