@@ -18,6 +18,7 @@ helpText = 'I will send you messages about the time. ' \
            '\nUse syntax: /add HH:MM message' \
            '\nI run on a 24-hour clock in EST!' \
            '\n\n/remove reminders you have added'
+           '\n/reminders View all your reminders'
 
 # initialize the database
 if not db.get('alerts') :
@@ -122,11 +123,14 @@ def cancel(bot, update):
     del context[chat_id]
 
 def reminders(bot, update):
+    alerts = db.get('alerts')
+    if chat_id not in alerts or not alerts[chat_id].keys():
+        bot.sendMessage(chat_id, text='You have no reminders! See /help for more info.')
+        return
+
     chat_id = str(update.message.chat_id)
     message = 'Your reminders:'
     message += '```'
-
-    alerts = db.get('alerts')
 
     for alert in alerts[chat_id]:
         message += '\n%-20s%s' %(alert, alerts[chat_id][alert])
