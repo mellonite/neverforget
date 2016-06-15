@@ -61,15 +61,20 @@ def remove_value(bot, update):
     elif chat_state == AWAIT_INPUT and chat_context == user_id:
         state[chat_id] = AWAIT_CONFIRMATION
 
-        # Save the user id and the answer to context
-        context[chat_id] = (user_id, update.message.text)
-        reply_markup = ReplyKeyboardMarkup(
-            [['Yes', 'No']],
-            one_time_keyboard=True)
-        bot.sendMessage(chat_id,
-                        text="Are you sure you would like to remove *%s*?" % update.message.text,
-                        parse_mode=ParseMode.MARKDOWN,
-                        reply_markup=reply_markup)
+        alerts = db.get('alerts')
+        if update.message.text not in alerts[chat_id]:
+            bot.sendMessage(chat_id, text="You don't have that reminder! Cancelling operation.")
+            cancel(bot, update)
+        else:
+            # Save the user id and the answer to context
+            context[chat_id] = (user_id, update.message.text)
+            reply_markup = ReplyKeyboardMarkup(
+                            [['Yes', 'No']],
+                            one_time_keyboard=True)
+            bot.sendMessage(chat_id,
+                            text="Are you sure you would like to remove *%s*?" % update.message.text,
+                            parse_mode=ParseMode.MARKDOWN,
+                            reply_markup=reply_markup)
 
     # If we are waiting for confirmation and the right user answered
     elif chat_state == AWAIT_CONFIRMATION and chat_context[0] == user_id:
@@ -110,7 +115,7 @@ def removeMsg(bot, update):
 # Handler for the /cancel command.
 # Sets the state back to MENU and clears the context
 def cancel(bot, update):
-    chat_id = update.message.chat_id
+    chat_id = str(update.message.chat_id)
     state = db.get('state')
     del state[chat_id]
     db.set('state', state)
