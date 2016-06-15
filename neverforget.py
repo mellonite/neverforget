@@ -124,13 +124,15 @@ def cancel(bot, update):
 def reminders(bot, update):
     chat_id = str(update.message.chat_id)
     message = 'Your reminders:'
+    message += '```'
 
     alerts = db.get('alerts')
 
     for alert in alerts[chat_id]:
         message += '\n%-20s%s' %(alert, alerts[chat_id][alert])
 
-    bot.sendMessage(update.message.chat_id, text=message)
+    message += '```'
+    bot.sendMessage(update.message.chat_id, text=message, parse_mode=ParseMode.MARKDOWN)
 
 def help(bot, update):
     bot.sendMessage(update.message.chat_id, text=helpText)
