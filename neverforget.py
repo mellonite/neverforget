@@ -17,7 +17,7 @@ helpText = 'I will send you messages about the time. ' \
            '\n\n/add your own reminders' \
            '\nUse syntax: /add HH:MM message' \
            '\nI run on a 24-hour clock in EST!' \
-           '\n\n/remove reminders you have added'
+           '\n\n/remove reminders you have added' \
            '\n/reminders View all your reminders'
 
 # initialize the database
@@ -130,7 +130,7 @@ def reminders(bot, update):
 
     chat_id = str(update.message.chat_id)
     message = 'Your reminders:'
-    message += '```'
+    message += '\n```'
 
     for alert in alerts[chat_id]:
         message += '\n%-20s%s' %(alert, alerts[chat_id][alert])
