@@ -124,11 +124,12 @@ def cancel(bot, update):
 
 def reminders(bot, update):
     alerts = db.get('alerts')
+    chat_id = str(update.message.chat_id)
+
     if chat_id not in alerts or not alerts[chat_id].keys():
         bot.sendMessage(chat_id, text='You have no reminders! See /help for more info.')
         return
 
-    chat_id = str(update.message.chat_id)
     message = 'Your reminders:'
     message += '\n```'
 
